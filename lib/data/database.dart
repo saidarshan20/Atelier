@@ -19,6 +19,9 @@ class Tasks extends Table {
 
   DateTimeColumn get dueDate => dateTime().nullable()();
 
+  /// Local file path to an attached image.
+  TextColumn get imagePath => text().nullable()();
+
   /// Reminder offset in minutes (e.g. 15, 30, 60, 1440). Null = no reminder.
   IntColumn get reminderMinutes => integer().nullable()();
 
@@ -92,7 +95,21 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (Migrator m) async {
+        await m.createAll();
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from == 1) {
+          await m.addColumn(tasks, tasks.imagePath);
+        }
+      },
+    );
+  }
 
   // ── Tasks ──
 
@@ -168,13 +185,58 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteTask(String id) =>
       (delete(tasks)..where((t) => t.id.equals(id))).go();
 
-  Future<void> toggleTaskDone(String id, bool done) =>
-      (update(tasks)..where((t) => t.id.equals(id))).write(
-        TasksCompanion(
-          done: Value(done),
-          updatedAt: Value(DateTime.now()),
-        ),
+  Future<void> toggleTaskDone(String id, bool done) async {
+    if (!done) {
+      await (update(tasks)..where((t) => t.id.equals(id))).write(
+        TasksCompanion(done: Value(false), updatedAt: Value(DateTime.now())),
       );
+      return;
+    }
+
+    // When checking it as done
+    final t = await getTaskById(id);
+    if (t == null) return;
+
+    final rec = await getRecurrenceForTask(id);
+
+    if (rec == null || t.dueDate == null) {
+      // Standard one-off task
+      await (update(tasks)..where((t) => t.id.equals(id))).write(
+        TasksCompanion(done: Value(true), updatedAt: Value(DateTime.now())),
+      );
+      return;
+    }
+
+    // It's a recurring task. Calculate next instance date.
+    DateTime nextDate = t.dueDate!;
+    if (rec.type == 'daily') {
+      nextDate = nextDate.add(Duration(days: rec.interval));
+    } else if (rec.type == 'weekly') {
+      nextDate = nextDate.add(Duration(days: 7 * rec.interval));
+    } else if (rec.type == 'monthly') {
+      nextDate = DateTime(nextDate.year, nextDate.month + rec.interval, nextDate.day, nextDate.hour, nextDate.minute);
+    }
+
+    // Does it exceed the scheduled end duration?
+    if (rec.endDate != null && nextDate.isAfter(rec.endDate!)) {
+      await (update(tasks)..where((t) => t.id.equals(id))).write(
+        TasksCompanion(done: Value(true), updatedAt: Value(DateTime.now())),
+      );
+      await deleteRecurrenceForTask(id);
+      return;
+    }
+
+    // Keep done = false, but jump the dueDate forward!
+    await (update(tasks)..where((t) => t.id.equals(id))).write(
+      TasksCompanion(
+        dueDate: Value(nextDate),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+    await (update(recurrences)..where((r) => r.taskId.equals(id))).write(
+      RecurrencesCompanion(nextDue: Value(nextDate)),
+    );
+  }
 
   // ── Projects ──
 
@@ -222,6 +284,9 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteRecurrenceForTask(String taskId) =>
       (delete(recurrences)..where((r) => r.taskId.equals(taskId))).go();
+
+  Stream<Recurrence?> watchRecurrenceForTask(String taskId) =>
+      (select(recurrences)..where((r) => r.taskId.equals(taskId))).watchSingleOrNull();
 
   // ── Time Logs ──
 

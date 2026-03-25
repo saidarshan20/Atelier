@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import '../data/database.dart';
 import '../data/database_provider.dart';
@@ -42,11 +46,14 @@ class TaskDetailSheet extends ConsumerStatefulWidget {
 class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
   late TextEditingController _titleCtrl;
   late TextEditingController _notesCtrl;
+  late FocusNode _notesFocusNode;
   late int _priority;
   late DateTime? _dueDate;
   late int? _reminderMinutes;
   String? _projectId;
+  String? _imagePath;
   bool _dirty = false;
+
 
   static const _reminderOptions = {
     null: 'None',
@@ -65,6 +72,7 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
   };
 
   String? _recurrenceType;
+  DateTime? _recurrenceEndDate;
   bool _recurrenceLoaded = false;
 
   @override
@@ -72,13 +80,23 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
     super.initState();
     _titleCtrl = TextEditingController(text: widget.task.title);
     _notesCtrl = TextEditingController(text: widget.task.notes ?? '');
+    _notesFocusNode = FocusNode();
     _priority = widget.task.priority;
     _dueDate = widget.task.dueDate;
     _reminderMinutes = widget.task.reminderMinutes;
     _projectId = widget.task.projectId;
+    _imagePath = widget.task.imagePath;
 
     _titleCtrl.addListener(() => _dirty = true);
     _notesCtrl.addListener(() => _dirty = true);
+    
+    // Auto-save the moment they stop typing / close keyboard explicitly
+    _notesFocusNode.addListener(() {
+      if (!_notesFocusNode.hasFocus) {
+        _saveIfDirty();
+      }
+    });
+
     _loadRecurrence();
   }
 
@@ -87,6 +105,7 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
     if (mounted) {
       setState(() {
         _recurrenceType = rec?.type;
+        _recurrenceEndDate = rec?.endDate;
         _recurrenceLoaded = true;
       });
     }
@@ -97,6 +116,7 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
     _saveIfDirty();
     _titleCtrl.dispose();
     _notesCtrl.dispose();
+    _notesFocusNode.dispose();
     super.dispose();
   }
 
@@ -113,6 +133,7 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
       dueDate: Value(_dueDate),
       reminderMinutes: Value(_reminderMinutes),
       projectId: Value(_projectId),
+      imagePath: Value(_imagePath),
       updatedAt: Value(DateTime.now()),
     );
     await db.updateTask(updated);
@@ -290,6 +311,7 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
                         ),
                         child: TextField(
                           controller: _notesCtrl,
+                          focusNode: _notesFocusNode,
                           minLines: 4,
                           maxLines: null,
                           decoration: InputDecoration(
@@ -307,6 +329,56 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
                           onChanged: (_) => _markDirty(),
                         ),
                       ),
+                    ),
+                    SizedBox(height: 24),
+
+                    // Photo attachment
+                    _Section(
+                      icon: Icons.image_outlined,
+                      title: 'Attachment',
+                      child: _imagePath == null
+                          ? GestureDetector(
+                              onTap: _pickImage,
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(vertical: 24),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3)),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.add_photo_alternate_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                    SizedBox(height: 8),
+                                    Text('Add a photo', style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                              ),
+                            )
+                          : Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.file(
+                                    File(_imagePath!),
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: IconButton(
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest.withOpacity(0.8),
+                                    ),
+                                    icon: Icon(Icons.close, size: 20, color: Theme.of(context).colorScheme.onSurface),
+                                    onPressed: _removeImage,
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
                     SizedBox(height: 24),
 
@@ -539,11 +611,31 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
         ),
       ),
     );
-    if (mounted && choice != _recurrenceType) {
+    if (mounted) {
+      DateTime? selectedEndDate = _recurrenceEndDate;
+      if (choice != null) {
+        selectedEndDate = await showDatePicker(
+          context: context,
+          initialDate: _dueDate ?? DateTime.now(),
+          firstDate: DateTime.now(),
+          lastDate: DateTime(2040),
+          helpText: 'End Date (Optional)',
+          builder: (ctx, child) => Theme(
+            data: Theme.of(ctx).copyWith(
+              colorScheme: Theme.of(context).colorScheme,
+            ),
+            child: child!,
+          ),
+        );
+      }
+
       setState(() {
         _recurrenceType = choice;
+        if (choice != null) _recurrenceEndDate = selectedEndDate;
+        if (choice == null) _recurrenceEndDate = null;
         _dirty = true;
       });
+
       if (choice == null) {
         await ref.read(databaseProvider).deleteRecurrenceForTask(widget.task.id);
       } else {
@@ -552,12 +644,37 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
             id: Uuid().v4(),
             taskId: widget.task.id,
             type: choice,
+            endDate: Value(selectedEndDate),
             nextDue: _dueDate ?? DateTime.now(),
           ),
         );
       }
       _saveIfDirty();
     }
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null && mounted) {
+      final appDir = await getApplicationDocumentsDirectory();
+      final fileName = p.basename(pickedFile.path);
+      final savedImage = await File(pickedFile.path).copy(p.join(appDir.path, fileName));
+      
+      setState(() {
+        _imagePath = savedImage.path;
+        _dirty = true;
+      });
+      _saveIfDirty();
+    }
+  }
+
+  Future<void> _removeImage() async {
+    setState(() {
+      _imagePath = null;
+      _dirty = true;
+    });
+    _saveIfDirty();
   }
 
   Future<void> _confirmDelete() async {

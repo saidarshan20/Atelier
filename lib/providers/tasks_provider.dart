@@ -63,3 +63,10 @@ final timeLogsProvider =
 // ── Currently active timer (taskId or null) ───────────────────────────────────
 
 final activeTimerTaskIdProvider = StateProvider<String?>((ref) => null);
+
+// ── Recurrence for a task ───────────────────────────────────────────────────────
+
+final recurrenceProvider =
+    StreamProvider.family<Recurrence?, String>((ref, taskId) {
+  return ref.watch(databaseProvider).watchRecurrenceForTask(taskId);
+});

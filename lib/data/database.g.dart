@@ -8,29 +8,29 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $TasksTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = VerificationMeta('id');
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _titleMeta = VerificationMeta('title');
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
       'title', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _notesMeta = VerificationMeta('notes');
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
       'notes', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _projectIdMeta =
-      VerificationMeta('projectId');
+      const VerificationMeta('projectId');
   @override
   late final GeneratedColumn<String> projectId = GeneratedColumn<String>(
       'project_id', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _priorityMeta =
-      VerificationMeta('priority');
+      const VerificationMeta('priority');
   @override
   late final GeneratedColumn<int> priority = GeneratedColumn<int>(
       'priority', aliasedName, false,
@@ -38,18 +38,24 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
       requiredDuringInsert: false,
       defaultValue: Constant(2));
   static const VerificationMeta _dueDateMeta =
-      VerificationMeta('dueDate');
+      const VerificationMeta('dueDate');
   @override
   late final GeneratedColumn<DateTime> dueDate = GeneratedColumn<DateTime>(
       'due_date', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _imagePathMeta =
+      const VerificationMeta('imagePath');
+  @override
+  late final GeneratedColumn<String> imagePath = GeneratedColumn<String>(
+      'image_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _reminderMinutesMeta =
-      VerificationMeta('reminderMinutes');
+      const VerificationMeta('reminderMinutes');
   @override
   late final GeneratedColumn<int> reminderMinutes = GeneratedColumn<int>(
       'reminder_minutes', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _doneMeta = VerificationMeta('done');
+  static const VerificationMeta _doneMeta = const VerificationMeta('done');
   @override
   late final GeneratedColumn<bool> done = GeneratedColumn<bool>(
       'done', aliasedName, false,
@@ -59,7 +65,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
           GeneratedColumn.constraintIsAlways('CHECK ("done" IN (0, 1))'),
       defaultValue: Constant(false));
   static const VerificationMeta _sortOrderMeta =
-      VerificationMeta('sortOrder');
+      const VerificationMeta('sortOrder');
   @override
   late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
       'sort_order', aliasedName, false,
@@ -67,13 +73,13 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
       requiredDuringInsert: false,
       defaultValue: Constant(0));
   static const VerificationMeta _createdAtMeta =
-      VerificationMeta('createdAt');
+      const VerificationMeta('createdAt');
   @override
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
       'created_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
   static const VerificationMeta _updatedAtMeta =
-      VerificationMeta('updatedAt');
+      const VerificationMeta('updatedAt');
   @override
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
       'updated_at', aliasedName, false,
@@ -86,6 +92,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         projectId,
         priority,
         dueDate,
+        imagePath,
         reminderMinutes,
         done,
         sortOrder,
@@ -128,6 +135,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     if (data.containsKey('due_date')) {
       context.handle(_dueDateMeta,
           dueDate.isAcceptableOrUnknown(data['due_date']!, _dueDateMeta));
+    }
+    if (data.containsKey('image_path')) {
+      context.handle(_imagePathMeta,
+          imagePath.isAcceptableOrUnknown(data['image_path']!, _imagePathMeta));
     }
     if (data.containsKey('reminder_minutes')) {
       context.handle(
@@ -176,6 +187,8 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
           .read(DriftSqlType.int, data['${effectivePrefix}priority'])!,
       dueDate: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}due_date']),
+      imagePath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}image_path']),
       reminderMinutes: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}reminder_minutes']),
       done: attachedDatabase.typeMapping
@@ -205,19 +218,23 @@ class Task extends DataClass implements Insertable<Task> {
   final int priority;
   final DateTime? dueDate;
 
+  /// Local file path to an attached image.
+  final String? imagePath;
+
   /// Reminder offset in minutes (e.g. 15, 30, 60, 1440). Null = no reminder.
   final int? reminderMinutes;
   final bool done;
   final int sortOrder;
   final DateTime createdAt;
   final DateTime updatedAt;
-  Task(
+  const Task(
       {required this.id,
       required this.title,
       this.notes,
       this.projectId,
       required this.priority,
       this.dueDate,
+      this.imagePath,
       this.reminderMinutes,
       required this.done,
       required this.sortOrder,
@@ -237,6 +254,9 @@ class Task extends DataClass implements Insertable<Task> {
     map['priority'] = Variable<int>(priority);
     if (!nullToAbsent || dueDate != null) {
       map['due_date'] = Variable<DateTime>(dueDate);
+    }
+    if (!nullToAbsent || imagePath != null) {
+      map['image_path'] = Variable<String>(imagePath);
     }
     if (!nullToAbsent || reminderMinutes != null) {
       map['reminder_minutes'] = Variable<int>(reminderMinutes);
@@ -261,6 +281,9 @@ class Task extends DataClass implements Insertable<Task> {
       dueDate: dueDate == null && nullToAbsent
           ? const Value.absent()
           : Value(dueDate),
+      imagePath: imagePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imagePath),
       reminderMinutes: reminderMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(reminderMinutes),
@@ -281,6 +304,7 @@ class Task extends DataClass implements Insertable<Task> {
       projectId: serializer.fromJson<String?>(json['projectId']),
       priority: serializer.fromJson<int>(json['priority']),
       dueDate: serializer.fromJson<DateTime?>(json['dueDate']),
+      imagePath: serializer.fromJson<String?>(json['imagePath']),
       reminderMinutes: serializer.fromJson<int?>(json['reminderMinutes']),
       done: serializer.fromJson<bool>(json['done']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
@@ -298,6 +322,7 @@ class Task extends DataClass implements Insertable<Task> {
       'projectId': serializer.toJson<String?>(projectId),
       'priority': serializer.toJson<int>(priority),
       'dueDate': serializer.toJson<DateTime?>(dueDate),
+      'imagePath': serializer.toJson<String?>(imagePath),
       'reminderMinutes': serializer.toJson<int?>(reminderMinutes),
       'done': serializer.toJson<bool>(done),
       'sortOrder': serializer.toJson<int>(sortOrder),
@@ -313,6 +338,7 @@ class Task extends DataClass implements Insertable<Task> {
           Value<String?> projectId = const Value.absent(),
           int? priority,
           Value<DateTime?> dueDate = const Value.absent(),
+          Value<String?> imagePath = const Value.absent(),
           Value<int?> reminderMinutes = const Value.absent(),
           bool? done,
           int? sortOrder,
@@ -325,6 +351,7 @@ class Task extends DataClass implements Insertable<Task> {
         projectId: projectId.present ? projectId.value : this.projectId,
         priority: priority ?? this.priority,
         dueDate: dueDate.present ? dueDate.value : this.dueDate,
+        imagePath: imagePath.present ? imagePath.value : this.imagePath,
         reminderMinutes: reminderMinutes.present
             ? reminderMinutes.value
             : this.reminderMinutes,
@@ -341,6 +368,7 @@ class Task extends DataClass implements Insertable<Task> {
       projectId: data.projectId.present ? data.projectId.value : this.projectId,
       priority: data.priority.present ? data.priority.value : this.priority,
       dueDate: data.dueDate.present ? data.dueDate.value : this.dueDate,
+      imagePath: data.imagePath.present ? data.imagePath.value : this.imagePath,
       reminderMinutes: data.reminderMinutes.present
           ? data.reminderMinutes.value
           : this.reminderMinutes,
@@ -360,6 +388,7 @@ class Task extends DataClass implements Insertable<Task> {
           ..write('projectId: $projectId, ')
           ..write('priority: $priority, ')
           ..write('dueDate: $dueDate, ')
+          ..write('imagePath: $imagePath, ')
           ..write('reminderMinutes: $reminderMinutes, ')
           ..write('done: $done, ')
           ..write('sortOrder: $sortOrder, ')
@@ -370,8 +399,19 @@ class Task extends DataClass implements Insertable<Task> {
   }
 
   @override
-  int get hashCode => Object.hash(id, title, notes, projectId, priority,
-      dueDate, reminderMinutes, done, sortOrder, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+      id,
+      title,
+      notes,
+      projectId,
+      priority,
+      dueDate,
+      imagePath,
+      reminderMinutes,
+      done,
+      sortOrder,
+      createdAt,
+      updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -382,6 +422,7 @@ class Task extends DataClass implements Insertable<Task> {
           other.projectId == this.projectId &&
           other.priority == this.priority &&
           other.dueDate == this.dueDate &&
+          other.imagePath == this.imagePath &&
           other.reminderMinutes == this.reminderMinutes &&
           other.done == this.done &&
           other.sortOrder == this.sortOrder &&
@@ -396,19 +437,21 @@ class TasksCompanion extends UpdateCompanion<Task> {
   final Value<String?> projectId;
   final Value<int> priority;
   final Value<DateTime?> dueDate;
+  final Value<String?> imagePath;
   final Value<int?> reminderMinutes;
   final Value<bool> done;
   final Value<int> sortOrder;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
-  TasksCompanion({
+  const TasksCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
     this.notes = const Value.absent(),
     this.projectId = const Value.absent(),
     this.priority = const Value.absent(),
     this.dueDate = const Value.absent(),
+    this.imagePath = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
     this.done = const Value.absent(),
     this.sortOrder = const Value.absent(),
@@ -423,6 +466,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.projectId = const Value.absent(),
     this.priority = const Value.absent(),
     this.dueDate = const Value.absent(),
+    this.imagePath = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
     this.done = const Value.absent(),
     this.sortOrder = const Value.absent(),
@@ -440,6 +484,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Expression<String>? projectId,
     Expression<int>? priority,
     Expression<DateTime>? dueDate,
+    Expression<String>? imagePath,
     Expression<int>? reminderMinutes,
     Expression<bool>? done,
     Expression<int>? sortOrder,
@@ -454,6 +499,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       if (projectId != null) 'project_id': projectId,
       if (priority != null) 'priority': priority,
       if (dueDate != null) 'due_date': dueDate,
+      if (imagePath != null) 'image_path': imagePath,
       if (reminderMinutes != null) 'reminder_minutes': reminderMinutes,
       if (done != null) 'done': done,
       if (sortOrder != null) 'sort_order': sortOrder,
@@ -470,6 +516,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       Value<String?>? projectId,
       Value<int>? priority,
       Value<DateTime?>? dueDate,
+      Value<String?>? imagePath,
       Value<int?>? reminderMinutes,
       Value<bool>? done,
       Value<int>? sortOrder,
@@ -483,6 +530,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       projectId: projectId ?? this.projectId,
       priority: priority ?? this.priority,
       dueDate: dueDate ?? this.dueDate,
+      imagePath: imagePath ?? this.imagePath,
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
       done: done ?? this.done,
       sortOrder: sortOrder ?? this.sortOrder,
@@ -512,6 +560,9 @@ class TasksCompanion extends UpdateCompanion<Task> {
     }
     if (dueDate.present) {
       map['due_date'] = Variable<DateTime>(dueDate.value);
+    }
+    if (imagePath.present) {
+      map['image_path'] = Variable<String>(imagePath.value);
     }
     if (reminderMinutes.present) {
       map['reminder_minutes'] = Variable<int>(reminderMinutes.value);
@@ -543,6 +594,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
           ..write('projectId: $projectId, ')
           ..write('priority: $priority, ')
           ..write('dueDate: $dueDate, ')
+          ..write('imagePath: $imagePath, ')
           ..write('reminderMinutes: $reminderMinutes, ')
           ..write('done: $done, ')
           ..write('sortOrder: $sortOrder, ')
@@ -559,17 +611,17 @@ class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $ProjectsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = VerificationMeta('id');
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _nameMeta = VerificationMeta('name');
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _iconMeta = VerificationMeta('icon');
+  static const VerificationMeta _iconMeta = const VerificationMeta('icon');
   @override
   late final GeneratedColumn<String> icon = GeneratedColumn<String>(
       'icon', aliasedName, false,
@@ -577,12 +629,12 @@ class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
       requiredDuringInsert: false,
       defaultValue: Constant('folder'));
   static const VerificationMeta _descriptionMeta =
-      VerificationMeta('description');
+      const VerificationMeta('description');
   @override
   late final GeneratedColumn<String> description = GeneratedColumn<String>(
       'description', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _colorMeta = VerificationMeta('color');
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
   @override
   late final GeneratedColumn<String> color = GeneratedColumn<String>(
       'color', aliasedName, false,
@@ -590,7 +642,7 @@ class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
       requiredDuringInsert: false,
       defaultValue: Constant('#545a94'));
   static const VerificationMeta _sortOrderMeta =
-      VerificationMeta('sortOrder');
+      const VerificationMeta('sortOrder');
   @override
   late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
       'sort_order', aliasedName, false,
@@ -676,7 +728,7 @@ class Project extends DataClass implements Insertable<Project> {
   final String? description;
   final String color;
   final int sortOrder;
-  Project(
+  const Project(
       {required this.id,
       required this.name,
       required this.icon,
@@ -798,7 +850,7 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
   final Value<String> color;
   final Value<int> sortOrder;
   final Value<int> rowid;
-  ProjectsCompanion({
+  const ProjectsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.icon = const Value.absent(),
@@ -903,22 +955,22 @@ class $SubtasksTable extends Subtasks with TableInfo<$SubtasksTable, Subtask> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $SubtasksTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = VerificationMeta('id');
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _taskIdMeta = VerificationMeta('taskId');
+  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
   @override
   late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
       'task_id', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _titleMeta = VerificationMeta('title');
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
       'text', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _doneMeta = VerificationMeta('done');
+  static const VerificationMeta _doneMeta = const VerificationMeta('done');
   @override
   late final GeneratedColumn<bool> done = GeneratedColumn<bool>(
       'done', aliasedName, false,
@@ -928,7 +980,7 @@ class $SubtasksTable extends Subtasks with TableInfo<$SubtasksTable, Subtask> {
           GeneratedColumn.constraintIsAlways('CHECK ("done" IN (0, 1))'),
       defaultValue: Constant(false));
   static const VerificationMeta _sortOrderMeta =
-      VerificationMeta('sortOrder');
+      const VerificationMeta('sortOrder');
   @override
   late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
       'sort_order', aliasedName, false,
@@ -1006,7 +1058,7 @@ class Subtask extends DataClass implements Insertable<Subtask> {
   final String title;
   final bool done;
   final int sortOrder;
-  Subtask(
+  const Subtask(
       {required this.id,
       required this.taskId,
       required this.title,
@@ -1111,7 +1163,7 @@ class SubtasksCompanion extends UpdateCompanion<Subtask> {
   final Value<bool> done;
   final Value<int> sortOrder;
   final Value<int> rowid;
-  SubtasksCompanion({
+  const SubtasksCompanion({
     this.id = const Value.absent(),
     this.taskId = const Value.absent(),
     this.title = const Value.absent(),
@@ -1208,23 +1260,23 @@ class $RecurrencesTable extends Recurrences
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $RecurrencesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = VerificationMeta('id');
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _taskIdMeta = VerificationMeta('taskId');
+  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
   @override
   late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
       'task_id', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _typeMeta = VerificationMeta('type');
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
   @override
   late final GeneratedColumn<String> type = GeneratedColumn<String>(
       'type', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _intervalMeta =
-      VerificationMeta('interval');
+      const VerificationMeta('interval');
   @override
   late final GeneratedColumn<int> interval = GeneratedColumn<int>(
       'interval', aliasedName, false,
@@ -1232,19 +1284,19 @@ class $RecurrencesTable extends Recurrences
       requiredDuringInsert: false,
       defaultValue: Constant(1));
   static const VerificationMeta _weekdaysMeta =
-      VerificationMeta('weekdays');
+      const VerificationMeta('weekdays');
   @override
   late final GeneratedColumn<String> weekdays = GeneratedColumn<String>(
       'weekdays', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _endDateMeta =
-      VerificationMeta('endDate');
+      const VerificationMeta('endDate');
   @override
   late final GeneratedColumn<DateTime> endDate = GeneratedColumn<DateTime>(
       'end_date', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
   static const VerificationMeta _nextDueMeta =
-      VerificationMeta('nextDue');
+      const VerificationMeta('nextDue');
   @override
   late final GeneratedColumn<DateTime> nextDue = GeneratedColumn<DateTime>(
       'next_due', aliasedName, false,
@@ -1341,7 +1393,7 @@ class Recurrence extends DataClass implements Insertable<Recurrence> {
   final String? weekdays;
   final DateTime? endDate;
   final DateTime nextDue;
-  Recurrence(
+  const Recurrence(
       {required this.id,
       required this.taskId,
       required this.type,
@@ -1477,7 +1529,7 @@ class RecurrencesCompanion extends UpdateCompanion<Recurrence> {
   final Value<DateTime?> endDate;
   final Value<DateTime> nextDue;
   final Value<int> rowid;
-  RecurrencesCompanion({
+  const RecurrencesCompanion({
     this.id = const Value.absent(),
     this.taskId = const Value.absent(),
     this.type = const Value.absent(),
@@ -1594,30 +1646,30 @@ class $TimeLogsTable extends TimeLogs with TableInfo<$TimeLogsTable, TimeLog> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $TimeLogsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = VerificationMeta('id');
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _taskIdMeta = VerificationMeta('taskId');
+  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
   @override
   late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
       'task_id', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _startedAtMeta =
-      VerificationMeta('startedAt');
+      const VerificationMeta('startedAt');
   @override
   late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
       'started_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
   static const VerificationMeta _endedAtMeta =
-      VerificationMeta('endedAt');
+      const VerificationMeta('endedAt');
   @override
   late final GeneratedColumn<DateTime> endedAt = GeneratedColumn<DateTime>(
       'ended_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
   static const VerificationMeta _durationMinsMeta =
-      VerificationMeta('durationMins');
+      const VerificationMeta('durationMins');
   @override
   late final GeneratedColumn<int> durationMins = GeneratedColumn<int>(
       'duration_mins', aliasedName, true,
@@ -1698,7 +1750,7 @@ class TimeLog extends DataClass implements Insertable<TimeLog> {
 
   /// Computed and stored when the timer is stopped.
   final int? durationMins;
-  TimeLog(
+  const TimeLog(
       {required this.id,
       required this.taskId,
       required this.startedAt,
@@ -1814,7 +1866,7 @@ class TimeLogsCompanion extends UpdateCompanion<TimeLog> {
   final Value<DateTime?> endedAt;
   final Value<int?> durationMins;
   final Value<int> rowid;
-  TimeLogsCompanion({
+  const TimeLogsCompanion({
     this.id = const Value.absent(),
     this.taskId = const Value.absent(),
     this.startedAt = const Value.absent(),
@@ -1928,6 +1980,7 @@ typedef $$TasksTableCreateCompanionBuilder = TasksCompanion Function({
   Value<String?> projectId,
   Value<int> priority,
   Value<DateTime?> dueDate,
+  Value<String?> imagePath,
   Value<int?> reminderMinutes,
   Value<bool> done,
   Value<int> sortOrder,
@@ -1942,6 +1995,7 @@ typedef $$TasksTableUpdateCompanionBuilder = TasksCompanion Function({
   Value<String?> projectId,
   Value<int> priority,
   Value<DateTime?> dueDate,
+  Value<String?> imagePath,
   Value<int?> reminderMinutes,
   Value<bool> done,
   Value<int> sortOrder,
@@ -1975,6 +2029,9 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<DateTime> get dueDate => $composableBuilder(
       column: $table.dueDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get imagePath => $composableBuilder(
+      column: $table.imagePath, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get reminderMinutes => $composableBuilder(
       column: $table.reminderMinutes,
@@ -2020,6 +2077,9 @@ class $$TasksTableOrderingComposer
   ColumnOrderings<DateTime> get dueDate => $composableBuilder(
       column: $table.dueDate, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get imagePath => $composableBuilder(
+      column: $table.imagePath, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get reminderMinutes => $composableBuilder(
       column: $table.reminderMinutes,
       builder: (column) => ColumnOrderings(column));
@@ -2063,6 +2123,9 @@ class $$TasksTableAnnotationComposer
 
   GeneratedColumn<DateTime> get dueDate =>
       $composableBuilder(column: $table.dueDate, builder: (column) => column);
+
+  GeneratedColumn<String> get imagePath =>
+      $composableBuilder(column: $table.imagePath, builder: (column) => column);
 
   GeneratedColumn<int> get reminderMinutes => $composableBuilder(
       column: $table.reminderMinutes, builder: (column) => column);
@@ -2109,6 +2172,7 @@ class $$TasksTableTableManager extends RootTableManager<
             Value<String?> projectId = const Value.absent(),
             Value<int> priority = const Value.absent(),
             Value<DateTime?> dueDate = const Value.absent(),
+            Value<String?> imagePath = const Value.absent(),
             Value<int?> reminderMinutes = const Value.absent(),
             Value<bool> done = const Value.absent(),
             Value<int> sortOrder = const Value.absent(),
@@ -2123,6 +2187,7 @@ class $$TasksTableTableManager extends RootTableManager<
             projectId: projectId,
             priority: priority,
             dueDate: dueDate,
+            imagePath: imagePath,
             reminderMinutes: reminderMinutes,
             done: done,
             sortOrder: sortOrder,
@@ -2137,6 +2202,7 @@ class $$TasksTableTableManager extends RootTableManager<
             Value<String?> projectId = const Value.absent(),
             Value<int> priority = const Value.absent(),
             Value<DateTime?> dueDate = const Value.absent(),
+            Value<String?> imagePath = const Value.absent(),
             Value<int?> reminderMinutes = const Value.absent(),
             Value<bool> done = const Value.absent(),
             Value<int> sortOrder = const Value.absent(),
@@ -2151,6 +2217,7 @@ class $$TasksTableTableManager extends RootTableManager<
             projectId: projectId,
             priority: priority,
             dueDate: dueDate,
+            imagePath: imagePath,
             reminderMinutes: reminderMinutes,
             done: done,
             sortOrder: sortOrder,

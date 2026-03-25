@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../data/database.dart';
 import '../theme/app_theme.dart';
+import '../providers/tasks_provider.dart';
 
 /// Reusable task row used across Inbox, Calendar, and Project Detail screens.
 class TaskCard extends ConsumerWidget {
@@ -28,6 +29,7 @@ class TaskCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final done = task.done;
+    final recurrenceAsync = ref.watch(recurrenceProvider(task.id));
 
     return GestureDetector(
       onTap: onTap,
@@ -118,6 +120,15 @@ class TaskCard extends ConsumerWidget {
                         // Due date
                         if (task.dueDate != null)
                           _DateChip(date: task.dueDate!),
+                        // Recurrence chip
+                        recurrenceAsync.when(
+                          data: (rec) {
+                            if (rec == null) return const SizedBox.shrink();
+                            return _RecurrenceChip(recurrence: rec, task: task);
+                          },
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
+                        ),
                       ],
                     ),
                   ],
@@ -154,6 +165,59 @@ class TaskCard extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _RecurrenceChip extends StatelessWidget {
+  final Recurrence recurrence;
+  final Task task;
+  const _RecurrenceChip({required this.recurrence, required this.task});
+
+  String _formatLabel() {
+    final Map<String, String> labels = {
+      'daily': 'D',
+      'weekly': 'W',
+      'monthly': 'M',
+    };
+    String base = labels[recurrence.type] ?? 'R';
+    String startStr = DateFormat('MMM d').format(task.createdAt);
+
+    if (recurrence.endDate != null) {
+      String endStr = DateFormat('MMM d').format(recurrence.endDate!);
+      return '$base · $startStr - $endStr';
+    }
+    return '$base · Since $startStr';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.tertiaryContainer.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.tertiaryContainer,
+          width: 0.5,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.repeat, size: 10, color: Theme.of(context).colorScheme.onTertiaryContainer),
+          SizedBox(width: 3),
+          Text(
+            _formatLabel(),
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onTertiaryContainer,
+            ),
+          ),
+        ],
       ),
     );
   }
