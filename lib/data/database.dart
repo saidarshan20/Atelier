@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import '../services/notification_service.dart';
 
 part 'database.g.dart';
 
@@ -236,6 +237,13 @@ class AppDatabase extends _$AppDatabase {
     await (update(recurrences)..where((r) => r.taskId.equals(id))).write(
       RecurrencesCompanion(nextDue: Value(nextDate)),
     );
+
+    // Re-schedule notification for the new next occurrence date.
+    final updatedTask = await getTaskById(id);
+    if (updatedTask != null) {
+      await NotificationService.cancelReminder(id);
+      await NotificationService.scheduleReminder(updatedTask);
+    }
   }
 
   // ── Projects ──
