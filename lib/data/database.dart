@@ -127,7 +127,10 @@ class AppDatabase extends _$AppDatabase {
               t.dueDate.isBiggerOrEqualValue(today) &
               t.dueDate.isSmallerThanValue(tomorrow) &
               t.done.equals(false))
-          ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.priority),
+            (t) => OrderingTerm(expression: t.dueDate)
+          ]))
         .watch();
   }
 
@@ -137,13 +140,19 @@ class AppDatabase extends _$AppDatabase {
     return (select(tasks)
           ..where((t) =>
               t.dueDate.isBiggerOrEqualValue(tomorrow) & t.done.equals(false))
-          ..orderBy([(t) => OrderingTerm(expression: t.dueDate)]))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.priority),
+            (t) => OrderingTerm(expression: t.dueDate)
+          ]))
         .watch();
   }
 
   Stream<List<Task>> watchInboxTasks() => (select(tasks)
         ..where((t) => t.dueDate.isNull() & t.done.equals(false))
-        ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
+        ..orderBy([
+          (t) => OrderingTerm(expression: t.priority),
+          (t) => OrderingTerm(expression: t.sortOrder)
+        ]))
       .watch();
 
   Stream<List<Task>> watchOverdueTasks() {
@@ -153,7 +162,10 @@ class AppDatabase extends _$AppDatabase {
           ..where((t) =>
               t.dueDate.isSmallerThanValue(today) &
               t.done.equals(false))
-          ..orderBy([(t) => OrderingTerm(expression: t.dueDate)]))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.priority),
+            (t) => OrderingTerm(expression: t.dueDate)
+          ]))
         .watch();
   }
 
@@ -164,14 +176,20 @@ class AppDatabase extends _$AppDatabase {
           ..where((t) =>
               t.dueDate.isBiggerOrEqualValue(start) &
               t.dueDate.isSmallerThanValue(end))
-          ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.priority),
+            (t) => OrderingTerm(expression: t.dueDate)
+          ]))
         .watch();
   }
 
   Stream<List<Task>> watchTasksByProject(String projectId) =>
       (select(tasks)
             ..where((t) => t.projectId.equals(projectId))
-            ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
+            ..orderBy([
+              (t) => OrderingTerm(expression: t.priority),
+              (t) => OrderingTerm(expression: t.dueDate)
+            ]))
           .watch();
 
   Future<Task?> getTaskById(String id) =>
