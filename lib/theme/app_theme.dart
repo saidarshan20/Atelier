@@ -248,9 +248,37 @@ class AtelierTheme {
   }
 
   static ThemeData dark([ColorScheme? dynamicScheme]) {
-    final colorScheme = dynamicScheme ?? ColorScheme.fromSeed(
+    // Use dynamic if available, else fall back to our seed.
+    final base = dynamicScheme ?? ColorScheme.fromSeed(
       seedColor: AtelierColors.primary,
       brightness: Brightness.dark,
+    );
+
+    // ── Enforce Tonal Separation ──────────────────────────────────────────────
+    // Problem: Material You sometimes produces dull brown/grey palettes where
+    // every surface layer looks identical. We fix this by rebuilding the surface
+    // stack from the dynamic PRIMARY color, ensuring tinted depth at every layer.
+    final primary = base.primary;
+
+    // Build an enriched color scheme that enforces hierarchy.
+    final colorScheme = base.copyWith(
+      // Background: darkest, pure, almost no tint.
+      surface: Color.alphaBlend(primary.withOpacity(0.04), const Color(0xFF0D0D12)),
+
+      // surfaceContainerLowest (dialogs, bottom sheets): very slightly lifted.
+      surfaceContainerLowest: Color.alphaBlend(primary.withOpacity(0.06), const Color(0xFF111118)),
+
+      // surfaceContainerLow (section backgrounds): a step up from lowest.
+      surfaceContainerLow: Color.alphaBlend(primary.withOpacity(0.08), const Color(0xFF161620)),
+
+      // surfaceContainer (raised containers, sidebar items): mid-level.
+      surfaceContainer: Color.alphaBlend(primary.withOpacity(0.10), const Color(0xFF1C1C28)),
+
+      // surfaceContainerHigh (cards): clearly distinct from background.
+      surfaceContainerHigh: Color.alphaBlend(primary.withOpacity(0.12), const Color(0xFF222232)),
+
+      // surfaceContainerHighest (focused/active cards): top of non-interactive stack.
+      surfaceContainerHighest: Color.alphaBlend(primary.withOpacity(0.15), const Color(0xFF28283C)),
     );
 
     return ThemeData(
@@ -267,6 +295,7 @@ class AtelierTheme {
         foregroundColor: colorScheme.primary,
         elevation: 0,
         scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         titleTextStyle: TextStyle(
           fontFamily: 'Manrope',
           fontWeight: FontWeight.w700,
@@ -304,11 +333,15 @@ class AtelierTheme {
         side: BorderSide(color: colorScheme.outline, width: 1.5),
       ),
       cardTheme: CardThemeData(
-        color: colorScheme.surfaceContainerLowest,
+        // Cards use surfaceContainerHigh + shadow for depth, no border needed.
+        color: colorScheme.surfaceContainerHigh,
         elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: EdgeInsets.zero,
       ),
     );
   }
 }
+

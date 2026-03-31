@@ -37,23 +37,35 @@ class TaskCard extends ConsumerWidget {
         duration: Duration(milliseconds: 200),
         margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         decoration: BoxDecoration(
+          // Card = surfaceContainerHigh + 8% primary tint.
+          // Done tasks fade back to surfaceContainerLow so they visually recede.
           color: done
               ? Theme.of(context).colorScheme.surfaceContainerLow
-              : Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              : Color.alphaBlend(
+                  Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                  Theme.of(context).colorScheme.surfaceContainerHigh,
+                ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: done 
-              ? Theme.of(context).colorScheme.outlineVariant.withOpacity(0.2) 
-              : Theme.of(context).colorScheme.outlineVariant.withOpacity(0.8),
-            width: 1,
-          ),
+          // Remove heavy border — use shadow for depth instead.
+          border: done
+              ? Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.15),
+                  width: 0.5,
+                )
+              : null,
           boxShadow: done
               ? []
               : [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.shadow.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: Offset(4, 4),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                    spreadRadius: -2,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
         ),
