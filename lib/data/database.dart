@@ -219,10 +219,11 @@ class AppDatabase extends _$AppDatabase {
     final rec = await getRecurrenceForTask(id);
 
     if (rec == null || t.dueDate == null) {
-      // Standard one-off task
+      // Standard one-off task — mark done AND kill any pending alarm immediately.
       await (update(tasks)..where((t) => t.id.equals(id))).write(
         TasksCompanion(done: Value(true), updatedAt: Value(DateTime.now())),
       );
+      await NotificationService.cancelReminder(id);
       return;
     }
 
@@ -242,6 +243,8 @@ class AppDatabase extends _$AppDatabase {
         TasksCompanion(done: Value(true), updatedAt: Value(DateTime.now())),
       );
       await deleteRecurrenceForTask(id);
+      // Also cancel the last-ever notification for this task.
+      await NotificationService.cancelReminder(id);
       return;
     }
 
