@@ -67,4 +67,4 @@ GoogleService-Info.plist
 *.sqlite3
 
 # Reference materials
-@refer/
+refer/
